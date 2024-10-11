@@ -1,0 +1,3 @@
+/home/benv/robot_ben/foc/ben_foc/ben_foc_stm32cubeIDE/cmake-build-debug/CMakeFiles/ben_foc_stm32cubeIDE.elf.dir
+/home/benv/robot_ben/foc/ben_foc/ben_foc_stm32cubeIDE/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/benv/robot_ben/foc/ben_foc/ben_foc_stm32cubeIDE/cmake-build-debug/CMakeFiles/rebuild_cache.dir
