@@ -1,10 +1,8 @@
 #define __MAIN_CPP__
 
 #include "ben_drive_main.h"
-#include "board.h"
 
 float vbus_voltage = 12.0f;
-bool thread_id_valid_ = false;
 
 BenDrive bdrv;
 
