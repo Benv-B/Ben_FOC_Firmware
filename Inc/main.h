@@ -60,6 +60,10 @@ void Error_Handler(void);
 #define TIM_1_8_PERIOD_CLOCKS 3500
 #define TIM_1_8_RCR 2
 #define TIM_1_8_DEADTIME_CLOCKS 20
+#define CAN_RX_Pin GPIO_PIN_8
+#define CAN_RX_GPIO_Port GPIOB
+#define CAN_TX_Pin GPIO_PIN_9
+#define CAN_TX_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
