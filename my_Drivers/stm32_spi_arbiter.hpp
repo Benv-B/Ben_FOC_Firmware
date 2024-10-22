@@ -2,7 +2,6 @@
 #define __STM32_SPI_ARBITER_HPP
 
 #include "stm32_gpio.hpp"
-
 #include "spi.h"
 
 class Stm32SpiArbiter

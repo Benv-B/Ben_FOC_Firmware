@@ -3,14 +3,11 @@
 
 // Hardware configuration
 #include "board.h"
-#include "interface.hpp"
 
 // #define IB_Pin GPIO_PIN_0
 // #define IB_GPIO_Port GPIOC
 // #define IC_Pin GPIO_PIN_1
 // #define IC_GPIO_Port GPIOC
-
-extern float vbus_voltage;
 
 // general system functions defined in main.cpp
 class BenDrive

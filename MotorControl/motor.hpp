@@ -4,7 +4,6 @@
 class Axis; // declared in axis.hpp
 class Motor;
 
-#include "board.h"
 #include "foc.hpp"
 
 class Motor

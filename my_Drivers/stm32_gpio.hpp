@@ -2,7 +2,6 @@
 #define __STM32_GPIO_HPP
 
 #include <gpio.h>
-#include "stm32f4xx_hal.h"
 
 class Stm32Gpio
 {

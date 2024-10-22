@@ -1,9 +1,6 @@
 //
 // Created by benv on 24-10-12.
 //
-
-#include "adc.h"
-#include "tim.h"
 #include "board.h"
 
 #include <stm32f405xx.h>
@@ -22,16 +19,19 @@ DRV8323 gate_driver{
     {nFAULT_GPIO_Port, nFAULT_Pin}    // nFAULT pin
 };
 
-Encoder ams_encoder = {&spi3_arbiter};
+Encoder ams_encoder{&spi3_arbiter};
 
-Motor motor = {&htim1,
-               1 / SHUNT_RESISTANCE,
-               gate_driver,
-               gate_driver};
+Motor motor{&htim1,
+            1 / SHUNT_RESISTANCE,
+            gate_driver,
+            gate_driver};
 
 Controller foc_controller;
 
-Axis axis1;
+Axis axis1{osPriorityHigh,
+           ams_encoder,
+           foc_controller,
+           motor};
 
 void system_init()
 {
@@ -43,9 +43,13 @@ void system_init()
 bool board_init()
 {
     MX_GPIO_Init();
+    MX_DMA_Init();
     MX_TIM1_Init();
     MX_ADC2_Init();
     MX_ADC3_Init();
+    MX_SPI3_Init();
+    MX_UART4_Init();
+    MX_CAN1_Init();
 
     HAL_NVIC_SetPriority(ControlLoop_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(ControlLoop_IRQn);

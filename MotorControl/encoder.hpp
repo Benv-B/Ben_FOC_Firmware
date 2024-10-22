@@ -1,8 +1,7 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#include "board.h"
-#include "stm32_spi_arbiter.hpp"
+#include "my_Drivers/stm32_spi_arbiter.hpp"
 
 // Only Magnetic Encoder is used
 class Encoder
@@ -19,8 +18,10 @@ public:
 
     Encoder(Stm32SpiArbiter *spi_arbiter) : spi_arbiter_(spi_arbiter) {}
     void setup();
-
     void sample_now();
+    void abs_spi_cs_pin_init();
+
+    Axis *axis_ = nullptr; // set by Axis constructor
 
     float pll_kp_ = 0.0f; // [count/s / count]
     float pll_ki_ = 0.0f; // [(count/s^2) / count]
@@ -46,6 +47,7 @@ public:
     Stm32Gpio abs_spi_cs_gpio_;
     uint16_t abs_spi_dma_tx_[1] = {0xFFFF};
     uint16_t abs_spi_dma_rx_[1];
+    Stm32SpiArbiter *spi_arbiter_;
     Stm32SpiArbiter::SpiTask spi_task_;
 
     Config_t config_;

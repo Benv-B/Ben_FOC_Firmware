@@ -63,6 +63,14 @@ void Encoder::setup()
 //     return success;
 // }
 
+void Encoder::abs_spi_cs_pin_init()
+{
+
+    abs_spi_cs_gpio_ = {GPIOA, GPIO_PIN_15};
+    // Write pin high
+    abs_spi_cs_gpio_.write(true);
+}
+
 void Encoder::sample_now()
 {
     abs_spi_start_transaction();

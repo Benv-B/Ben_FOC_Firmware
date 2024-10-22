@@ -4,7 +4,22 @@
 
 #include "axis.hpp"
 #include "utils.hpp"
+#include "ben_drive_main.h"
 // #include "communication/interface_can.hpp"
+
+Axis::Axis(osPriority thread_priority,
+           Encoder &encoder,
+           Controller &controller,
+           Motor &motor)
+    : thread_priority_(thread_priority),
+      encoder_(encoder),
+      controller_(controller),
+      motor_(motor)
+{
+    motor_.axis_ = this;
+    encoder_.axis_ = this;
+    controller_.axis_ = this;
+}
 
 /**
  * @brief Blocks until at least one complete control loop has been executed.
@@ -91,6 +106,21 @@ bool Axis::run_closed_loop_control_loop()
     return check_for_errors();
 }
 
+bool Axis::run_idle_loop()
+{
+    last_drv_fault_ = motor_.gate_driver_.get_error();
+    // TODO : check if this works
+    axis1.motor_.disarm();
+    // mechanical_brake_.engage();
+    // set_step_dir_active(config_.enable_step_dir && config_.step_dir_always_on);
+    while (requested_state_ == AXIS_STATE_UNDEFINED)
+    {
+        motor_.setup();
+        osDelay(1);
+    }
+    return check_for_errors();
+}
+
 // Infinite loop that does calibration and enters main control loop as appropriate
 void Axis::run_state_machine_loop()
 {
@@ -136,6 +166,24 @@ void Axis::run_state_machine_loop()
         bool status;
         switch (current_state_)
         {
+        case AXIS_STATE_CLOSED_LOOP_CONTROL:
+        {
+            // if (odrv.any_error())
+            //     goto invalid_state_label;
+            if (!axis1.motor_.is_calibrated_ || axis1.encoder_.config_.direction == 0)
+                goto invalid_state_label;
+            // watchdog_feed();
+            status = run_closed_loop_control_loop();
+        }
+        break;
+
+        case AXIS_STATE_IDLE:
+        {
+            run_idle_loop();
+            status = true;
+        }
+        break;
+
             // case AXIS_STATE_MOTOR_CALIBRATION:
             // {
             //     // These error checks are a hacky way to force legacy behavior
@@ -147,6 +195,7 @@ void Axis::run_state_machine_loop()
             //     status = motor.run_calibration();
             // }
             // break;
+
             // case AXIS_STATE_ENCODER_DIR_FIND:
             // {
             //     // if (odrv.any_error())
@@ -160,6 +209,7 @@ void Axis::run_state_machine_loop()
             //         encoder_.apply_config(motor_.config_.motor_type);
             // }
             // break;
+
             // case AXIS_STATE_HOMING:
             // {
             //     Controller::ControlMode stored_control_mode = controller_.config_.control_mode;
@@ -172,25 +222,21 @@ void Axis::run_state_machine_loop()
             // }
             // break;
 
-        // case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
-        // {
-        //     // if (odrv.any_error())
-        //     //     goto invalid_state_label;
-        //     // if (!motor_.is_calibrated_)
-        //     //     goto invalid_state_label;
-        //     status = encoder_.run_offset_calibration();
-        // }
-        // break;
-        case AXIS_STATE_CLOSED_LOOP_CONTROL:
-        {
-            // if (odrv.any_error())
-            //     goto invalid_state_label;
-            if (!motor.is_calibrated_ || ams_encoder.config_.direction == 0)
-                goto invalid_state_label;
-            // watchdog_feed();
-            status = run_closed_loop_control_loop();
-        }
-        break;
+            // case AXIS_STATE_ENCODER_OFFSET_CALIBRATION:
+            // {
+            //     // if (odrv.any_error())
+            //     //     goto invalid_state_label;
+            //     // if (!motor_.is_calibrated_)
+            //     //     goto invalid_state_label;
+            //     status = encoder_.run_offset_calibration();
+            // }
+            // break;
+
+        default:
+        invalid_state_label:
+            // error_ |= ERROR_INVALID_STATE;
+            status = false; // this will set the state to idle
+            break;
         }
         // If the state failed, go to idle, else advance task chain
         if (!status)

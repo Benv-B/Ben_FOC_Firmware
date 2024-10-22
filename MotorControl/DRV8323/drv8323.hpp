@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 #include "gate_driver.h"
-#include "stm32_spi_arbiter.hpp"
-#include "stm32_gpio.hpp"
+#include "my_Drivers/stm32_gpio.hpp"
+#include "my_Drivers/stm32_spi_arbiter.hpp"
 
 class DRV8323 : public GateDriverBase, public OpAmpBase
 {

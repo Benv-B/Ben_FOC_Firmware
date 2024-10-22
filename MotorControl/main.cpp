@@ -1,14 +1,13 @@
 #define __MAIN_CPP__
-
 #include "ben_drive_main.h"
 
-float vbus_voltage = 12.0f;
+const uint32_t stack_size_default_task = 2048; // Bytes
 
 BenDrive bdrv;
 
 void BenDrive::sampling_cb()
 {
-    bdrv.AMSEncoder->sample_now();
+    axis1.encoder_.sample_now();
 }
 
 /**
@@ -56,13 +55,17 @@ void BenDrive::control_loop_cb(uint32_t timestamp)
 
 static void rtos_main(void *)
 {
-    // TODO: use hal to set encoder spi pin mode and pull it high
-    // ams_encoder.
+    // Init USB device
+    MX_USB_DEVICE_Init();
 
-    // TODO: motor setup
-    motor.setup();
-    // TODO: encoder setup
-    ams_encoder.setup();
+    // TODO: init communication
+
+    // pull encoder spi high
+    axis1.encoder_.abs_spi_cs_pin_init();
+
+    axis1.motor_.setup();
+
+    axis1.encoder_.setup();
 
     // Wait for up to 2s for motor to become ready to allow for error-free
     // startup. This delay gives the current sensor calibration time to
@@ -70,7 +73,7 @@ static void rtos_main(void *)
     // but we still enter idle state.
     for (size_t i = 0; i < 2000; ++i)
     {
-        bool motors_ready = motor.current_meas_.has_value();
+        bool motors_ready = axis1.motor_.current_meas_.has_value();
         if (motors_ready)
         {
             break;
@@ -101,4 +104,10 @@ extern "C" int main()
 
     osThreadDef(defaultTask, rtos_main, osPriorityNormal, 0, stack_size_default_task / sizeof(StackType_t));
     defaultTaskHandle = osThreadCreate(osThread(defaultTask));
+
+    // Start scheduler
+    osKernelStart();
+
+    for (;;)
+        ;
 }

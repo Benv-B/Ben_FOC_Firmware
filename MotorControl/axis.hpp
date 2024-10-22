@@ -3,9 +3,7 @@
 
 class Axis;
 
-#include "ben_drive_main.h"
 #include "encoder.hpp"
-#include "controller.hpp"
 #include "utils.hpp"
 
 #include <array>
@@ -86,9 +84,7 @@ public:
         // }
     };
 
-    Axis(uint16_t default_step_gpio_pin,
-         uint16_t default_dir_gpio_pin,
-         osPriority thread_priority,
+    Axis(osPriority thread_priority,
          Encoder &encoder,
          Controller &controller,
          Motor &motor);
@@ -124,6 +120,7 @@ public:
     osThreadId thread_id_ = 0;
     const uint32_t stack_size_ = 2048; // Bytes
     volatile bool thread_id_valid_ = false;
+    uint32_t last_drv_fault_ = 0;
 
     Error error_ = ERROR_NONE;
     // True if there are no errors

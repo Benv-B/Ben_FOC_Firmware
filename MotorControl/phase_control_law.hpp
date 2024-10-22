@@ -3,7 +3,6 @@
 
 #include <variant>
 #include "interface.hpp"
-#include <optional>
 
 template <size_t N_PHASES>
 class PhaseControlLaw

@@ -1,4 +1,3 @@
-
 #include "drv8323.hpp"
 #include "utils.hpp"
 #include "cmsis_os.h"
