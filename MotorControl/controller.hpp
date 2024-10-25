@@ -1,8 +1,8 @@
 #ifndef __CONTROLLER_HPP
 #define __CONTROLLER_HPP
 
-#include "board.h"
-#include "ben_drive_main.h"
+#include "component.hpp"
+class Axis;
 
 class Controller
 {
@@ -50,9 +50,9 @@ public:
         float vel_integrator_gain = 2.0f / 6.0f; // [Nm/(turn/s * s)]
         float vel_limit = 2.0f;                  // [turn/s] Infinity to disable.
         // float vel_limit_tolerance = 1.2f;        // ratio to vel_lim. Infinity to disable.
-        float vel_integrator_limit = INFINITY; // Vel. integrator clamping value. Infinity to disable.
-        float vel_ramp_rate = 1.0f;            // [(turn/s) / s]
-        float torque_ramp_rate = 0.01f;        // Nm / sec
+        float vel_integrator_limit = 1000000; // Vel. integrator clamping value. Infinity to disable.
+        float vel_ramp_rate = 1.0f;           // [(turn/s) / s]
+        float torque_ramp_rate = 0.01f;       // Nm / sec
         // bool circular_setpoints = false;
         // float circular_setpoint_range = 1.0f; // Circular range when circular_setpoints is true. [turn]
         uint32_t steps_per_circular_range = 1024;
@@ -89,7 +89,10 @@ public:
         // }
     };
 
+    void set_input_pos_and_steps(float const pos);
     bool anticogging_calibration(float pos_estimate, float vel_estimate);
+    bool control_mode_updated();
+    void reset();
     bool update();
 
     Axis *axis_ = nullptr; // set by Axis constructor
@@ -100,6 +103,8 @@ public:
     float input_pos_ = 0.0f;    // [turns]
     float input_vel_ = 0.0f;    // [turn/s]
     float input_torque_ = 0.0f; // [Nm]
+    float input_filter_kp_ = 0.0f;
+    float input_filter_ki_ = 0.0f;
 
     // Inputs
     InputPort<float> pos_estimate_linear_src_;
@@ -117,6 +122,8 @@ public:
 
     // Outputs
     OutputPort<float> torque_output_ = 0.0f;
+
+    bool input_pos_updated_ = false;
 
     constexpr void input_pos_updated()
     {

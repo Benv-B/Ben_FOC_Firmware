@@ -1,10 +1,12 @@
 #include <stm32_system.h>
+#include "utils.hpp"
 #include <bitset>
 #include "encoder.hpp"
+#include "axis.hpp"
 
 void Encoder::setup()
 {
-    HAL_TIM_Encoder_Start(timer_, TIM_CHANNEL_ALL);
+//    HAL_TIM_Encoder_Start(timer_, TIM_CHANNEL_ALL);
 
     // mode_ = config_.mode;
 
@@ -81,14 +83,14 @@ bool Encoder::abs_spi_start_transaction()
     if (Stm32SpiArbiter::acquire_task(&spi_task_))
     {
         spi_task_.ncs_gpio = abs_spi_cs_gpio_;
-        spi_task_.tx_buf = (uint8_t)abs_spi_dma_tx_;
-        spi_task_.rx_buf = (uint8_t)abs_spi_dma_rx_;
+        spi_task_.tx_buf = (uint8_t*)abs_spi_dma_tx_;
+        spi_task_.rx_buf = (uint8_t*)abs_spi_dma_rx_;
         spi_task_.length = 1;
         spi_task_.on_complete = [](void *ctx, bool sucess)
-        { ((Encoder *)ctx)->abs_spi_cb(sucess) };
+        { ((Encoder *)ctx)->abs_spi_cb(sucess); };
         spi_task_.on_complete_ctx = this;
 
-        Stm32SpiArbiter::transfer_async(&spi_task_);
+        spi_arbiter_->transfer_async(&spi_task_);
     }
     else
     {
@@ -112,14 +114,16 @@ void Encoder::abs_spi_cb(bool success)
 
     if (!success)
     {
-        goto done;
+        spi_arbiter_->release_task(&spi_task_);
+        return;
     }
 
     uint16_t rawVal = abs_spi_dma_rx_[0];
     // check if parity is correct (even) and error flag clear
     if (ams_parity(rawVal) || ((rawVal >> 14) & 1))
     {
-        goto done;
+        spi_arbiter_->release_task(&spi_task_);
+        return;
     }
     pos = rawVal & 0x3fff;
     pos_abs_ = pos;
@@ -128,18 +132,6 @@ void Encoder::abs_spi_cb(bool success)
     {
         is_ready_ = true;
     }
-
-done:
-    Stm32SpiArbiter::release_task(&spi_task_);
-}
-
-void Encoder::abs_spi_cs_pin_init()
-{
-    abs_spi_cs_gpio_ = get_gpio(config_.abs_spi_cs_gpio_pin);
-    abs_spi_cs_gpio_.config(GPIO_MODE_OUTPUT_PP, GPIO_PULLUP);
-
-    // Write pin high
-    abs_spi_cs_gpio_.write(true);
 }
 
 bool Encoder::update()
@@ -249,13 +241,13 @@ bool Encoder::update()
 
     //// compute electrical phase
     // TODO avoid recomputing elec_rad_per_enc every time
-    float elec_rad_per_enc = motor.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
+    float elec_rad_per_enc = axis_->motor_.config_.pole_pairs * 2 * M_PI * (1.0f / (float)(config_.cpr));
     float ph = elec_rad_per_enc * (interpolated_enc - config_.phase_offset_float);
 
     if (is_ready_)
     {
         phase_ = wrap_pm_pi(ph) * config_.direction;
-        phase_vel_ = (2 * M_PI) * *vel_estimate_.present() * motor.config_.pole_pairs * config_.direction;
+        phase_vel_ = (2 * M_PI) * *vel_estimate_.present() * axis_->motor_.config_.pole_pairs * config_.direction;
     }
 
     return true;

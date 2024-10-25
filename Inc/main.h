@@ -57,6 +57,7 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define TIM_1_8_CLOCK_HZ 168000000
 #define TIM_1_8_PERIOD_CLOCKS 3500
 #define TIM_1_8_RCR 2
 #define TIM_1_8_DEADTIME_CLOCKS 20

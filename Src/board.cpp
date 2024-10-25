@@ -2,6 +2,8 @@
 // Created by benv on 24-10-12.
 //
 #include "board.h"
+#include "axis.hpp"
+#include "ben_drive_main.h"
 
 #include <stm32f405xx.h>
 
@@ -65,12 +67,14 @@ bool board_init()
     delay_us(40); // mimumum pull-down time for full reset: 20us
     drv_enable_gpio.write(true);
     delay_us(20000); // mimumum pull-down time for full reset: 20us
+
+    return true;
 }
 
 static bool
 fetch_and_reset_adcs(std::optional<Iph_ABC_t> *current)
 {
-    bool all_adcs_done = ((ADC2->SR & AADC_SR_JEOC) == ADC_SR_JEOC) && ((ADC3->SR & ADC_SR_JEOC) == ADC_SR_JEOC);
+    bool all_adcs_done = ((ADC2->SR & ADC_SR_JEOC) == ADC_SR_JEOC) && ((ADC3->SR & ADC_SR_JEOC) == ADC_SR_JEOC);
     if (!all_adcs_done)
     {
         return false;
@@ -150,7 +154,7 @@ extern "C"
 
         motor.current_meas_cb(timestamp, current);
 
-        bdrv.control_loop_cb();
+        bdrv.control_loop_cb(timestamp);
 
         // By this time the ADCs for both M0 and M1 should have fired again. But
         // let's wait for them just to be sure.
@@ -162,7 +166,7 @@ extern "C"
             motor.disarm();
         }
 
-        motor.dc_calib_cb();
+        motor.dc_calib_cb(timestamp + TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1), current);
 
         motor.pwm_update_cb(timestamp + 3 * TIM_1_8_PERIOD_CLOCKS * (TIM_1_8_RCR + 1));
 

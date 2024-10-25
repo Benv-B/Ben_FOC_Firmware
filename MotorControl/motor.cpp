@@ -1,6 +1,6 @@
 #include "motor.hpp"
-#include "ben_drive_main.h"
-
+#include "axis.hpp"
+#include "interface.hpp"
 #include <algorithm>
 
 static constexpr auto CURRENT_ADC_LOWER_BOUND = (uint32_t)((float)(1 << 12) * CURRENT_SENSE_MIN_VOLT / 3.3f);
@@ -267,7 +267,8 @@ bool Motor::arm(PhaseControlLaw<3> *control_law)
  * motor phases are floating and will not be enabled again until
  * arm() is called.
  */
-bool Motor::disarm(bool *p_was_armed)
+//bool Motor::disarm(bool *p_was_armed)
+bool Motor::disarm()
 {
     bool was_armed;
 
@@ -293,10 +294,10 @@ bool Motor::disarm(bool *p_was_armed)
     //     update_brake_current();
     // }
 
-    if (p_was_armed)
-    {
-        *p_was_armed = was_armed;
-    }
+//    if (p_was_armed)
+//    {
+//        *p_was_armed = was_armed;
+//    }
 
     return true;
 }
@@ -306,7 +307,7 @@ std::optional<float> Motor::phase_current_from_adcval(uint32_t ADCValue)
     // Make sure the measurements don't come too close to the current sensor's hardware limitations
     if (ADCValue < CURRENT_ADC_LOWER_BOUND || ADCValue > CURRENT_ADC_UPPER_BOUND)
     {
-        error_ |= ERROR_CURRENT_SENSE_SATURATION;
+        error_ |= (ERROR_CURRENT_SENSE_SATURATION);
         return std::nullopt;
     }
 
@@ -402,10 +403,10 @@ void Motor::current_meas_cb(uint32_t timestamp, std::optional<Iph_ABC_t> current
 
     if (control_law_)
     {
-        Error err = control_law_->on_measurement(vbus_voltage,
-                                                 current_meas_.has_value() ? std::make_optional(std::array<float, 3>{current_meas_->phA, current_meas_->phB, current_meas_->phC})
-                                                                           : std::nullopt,
-                                                 timestamp);
+        BenDrive_Intf::Motor_Intf::Error err = control_law_->on_measurement(vbus_voltage,
+                                                                            current_meas_.has_value() ? std::make_optional(std::array<float, 3>{current_meas_->phA, current_meas_->phB, current_meas_->phC})
+                                                                                                      : std::nullopt,
+                                                                            timestamp);
         if (err != ERROR_NONE)
         {
             disarm();
@@ -457,7 +458,7 @@ void Motor::pwm_update_cb(uint32_t output_timestamp)
 {
     n_evt_pwm_update_++;
 
-    Error control_law_status = ERROR_CONTROLLER_FAILED;
+    BenDrive_Intf::Motor_Intf::Error control_law_status = ERROR_CONTROLLER_FAILED;
     float pwm_timings[3] = {NAN, NAN, NAN};
     std::optional<float> i_bus;
 
@@ -541,11 +542,6 @@ void Motor::update(uint32_t timestamp)
     float iq_lim_sqr = SQ(ilim) - SQ(id);
     float Iq_lim = (iq_lim_sqr <= 0.0f) ? 0.0f : sqrt(iq_lim_sqr);
     iq = std::clamp(iq, -Iq_lim, Iq_lim);
-
-    if (axis_->motor_.config_.motor_type != Motor::MOTOR_TYPE_GIMBAL)
-    {
-        Idq_setpoint_ = {id, iq};
-    }
 
     // This update call is in bit a weird position because it depends on the
     // Id,q setpoint but outputs the phase velocity that we depend on later

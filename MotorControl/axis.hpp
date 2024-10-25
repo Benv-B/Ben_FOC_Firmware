@@ -1,33 +1,18 @@
 #ifndef __AXIS_HPP
 #define __AXIS_HPP
 
-class Axis;
-
 #include "encoder.hpp"
+#include "interface.hpp"
 #include "utils.hpp"
+#include "encoder.hpp"
+#include "motor.hpp"
+#include "controller.hpp"
 
 #include <array>
 
-class Axis
+class Axis : public BenDrive_Intf::Axis_Intf
 {
 public:
-    enum Error
-    {
-        ERROR_NONE = 0x00000000,
-        ERROR_INVALID_STATE = 0x00000001,
-        ERROR_MOTOR_FAILED = 0x00000040,
-        ERROR_SENSORLESS_ESTIMATOR_FAILED = 0x00000080,
-        ERROR_ENCODER_FAILED = 0x00000100,
-        ERROR_CONTROLLER_FAILED = 0x00000200,
-        ERROR_WATCHDOG_TIMER_EXPIRED = 0x00000800,
-        ERROR_MIN_ENDSTOP_PRESSED = 0x00001000,
-        ERROR_MAX_ENDSTOP_PRESSED = 0x00002000,
-        ERROR_ESTOP_REQUESTED = 0x00004000,
-        ERROR_HOMING_WITHOUT_ENDSTOP = 0x00020000,
-        ERROR_OVER_TEMP = 0x00040000,
-        ERROR_UNKNOWN_POSITION = 0x00080000,
-    };
-
     enum AxisState
     {
         AXIS_STATE_UNDEFINED = 0,
@@ -46,7 +31,7 @@ public:
         bool startup_motor_calibration = false;          //<! run motor calibration at startup, skip otherwise
         bool startup_encoder_offset_calibration = false; //<! run encoder offset calibration after startup, skip otherwise
         bool startup_closed_loop_control = false;        //<! enable closed loop control after calibration/startup
-        // bool startup_homing = false;                     //<! enable homing after calibration/startup
+        bool startup_homing = false;                     //<! enable homing after calibration/startup
 
         // bool enable_step_dir = false;    //<! enable step/dir input after calibration
         //                                  //   For M0 this has no effect if enable_uart is true
@@ -89,10 +74,12 @@ public:
          Controller &controller,
          Motor &motor);
 
+    bool wait_for_control_iteration();
+    void start_thread();
     bool start_closed_loop_control();
     bool stop_closed_loop_control();
-    bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
-                         std::function<bool(bool)> loop_cb = {});
+    // bool run_lockin_spin(const LockinConfig_t &lockin_config, bool remain_armed,
+    //                      std::function<bool(bool)> loop_cb = {});
     bool run_closed_loop_control_loop();
     bool run_homing();
     bool run_idle_loop();
@@ -122,7 +109,7 @@ public:
     volatile bool thread_id_valid_ = false;
     uint32_t last_drv_fault_ = 0;
 
-    Error error_ = ERROR_NONE;
+    BenDrive_Intf::Axis_Intf::Error error_ = ERROR_NONE;
     // True if there are no errors
     bool inline check_for_errors()
     {

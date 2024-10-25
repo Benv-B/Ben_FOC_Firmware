@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 #include "gate_driver.h"
-#include "my_Drivers/stm32_gpio.hpp"
-#include "my_Drivers/stm32_spi_arbiter.hpp"
+#include "stm32_gpio.hpp"
+#include "stm32_spi_arbiter.hpp"
 
 class DRV8323 : public GateDriverBase, public OpAmpBase
 {
@@ -43,9 +43,9 @@ public:
         FaultType_SA_OC = (1 << 26)   // gate drive fault on the C low-side MOSFET
     } FaultType_e;
 
-    DRV8323(Stm32SpiArbiter spi_arbiter, Stm32Gpio ncs_gpio,
+    DRV8323(Stm32SpiArbiter *spi_arbiter, Stm32Gpio ncs_gpio,
             Stm32Gpio enable_gpio, Stm32Gpio nfault_gpio)
-        : spi_arbiter_(spi_arbiter), ncs_gpio(ncs_gpio),
+        : spi_arbiter_(spi_arbiter), ncs_gpio_(ncs_gpio),
           enable_gpio_(enable_gpio), nfault_gpio_(nfault_gpio) {}
 
     /**

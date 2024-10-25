@@ -1,7 +1,10 @@
 #ifndef __ENCODER_HPP
 #define __ENCODER_HPP
 
-#include "my_Drivers/stm32_spi_arbiter.hpp"
+#include "stm32_spi_arbiter.hpp"
+#include "component.hpp"
+
+class Axis;
 
 // Only Magnetic Encoder is used
 class Encoder
@@ -10,6 +13,11 @@ public:
     struct Config_t
     {
         bool enable_phase_interpolation = true;
+        bool pre_calibrated = false;     // If true, this means the offset stored in
+                                         // configuration is valid and does not need
+                                         // be determined by run_offset_calibration.
+                                         // In this case the encoder will enter ready
+                                         // state as soon as the index is found.
         int32_t phase_offset = 0;        // Offset between encoder count and rotor electrical phase
         float phase_offset_float = 0.0f; // Sub-count phase alignment offset
         int32_t direction = 0;           // direction with respect to motor
@@ -19,9 +27,11 @@ public:
     Encoder(Stm32SpiArbiter *spi_arbiter) : spi_arbiter_(spi_arbiter) {}
     void setup();
     void sample_now();
-    void abs_spi_cs_pin_init();
+    bool update();
 
     Axis *axis_ = nullptr; // set by Axis constructor
+
+    bool is_ready_ = false;
 
     float pll_kp_ = 0.0f; // [count/s / count]
     float pll_ki_ = 0.0f; // [(count/s^2) / count]

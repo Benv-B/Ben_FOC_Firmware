@@ -63,12 +63,12 @@ bool Axis::start_closed_loop_control()
 
         bool is_acim = false;
         // phase
-        // OutputPort<float> *phase_src = &encoder_.phase_;
+        OutputPort<float> *phase_src = &encoder_.phase_;
         // acim_estimator_.rotor_phase_src_.connect_to(phase_src);
         OutputPort<float> *stator_phase_src = phase_src;
         motor_.current_control_.phase_src_.connect_to(stator_phase_src);
         // phase vel
-        // OutputPort<float> *phase_vel_src = sensorless_mode ? &sensorless_estimator_.phase_vel_ : &encoder_.phase_vel_;
+        OutputPort<float> *phase_vel_src = &encoder_.phase_vel_;
         // acim_estimator_.rotor_phase_vel_src_.connect_to(phase_vel_src);
         OutputPort<float> *stator_phase_vel_src = phase_vel_src;
         motor_.phase_vel_src_.connect_to(stator_phase_vel_src);
@@ -85,9 +85,9 @@ bool Axis::start_closed_loop_control()
     return true;
 }
 
-void Axis::stop_closed_loop_control()
+bool Axis::stop_closed_loop_control()
 {
-    motor_.disarm();
+    return motor_.disarm();
 }
 
 bool Axis::run_closed_loop_control_loop()
@@ -261,7 +261,7 @@ static void run_state_machine_loop_wrapper(void *ctx)
 // @brief Starts run_state_machine_loop in a new thread
 void Axis::start_thread()
 {
-    osThreadDef(thread_def, run_state_machine_loop_wrapper, thread_priority_, 0, stack_size_ / sizeof(StackType_t));
+    osThreadDef(thread_def, (os_pthread)run_state_machine_loop_wrapper, thread_priority_, 0, stack_size_ / sizeof(StackType_t));
     thread_id_ = osThreadCreate(osThread(thread_def), this);
     thread_id_valid_ = true;
 }

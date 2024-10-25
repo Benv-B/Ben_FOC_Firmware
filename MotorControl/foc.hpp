@@ -17,12 +17,12 @@ public:
 
     void reset() final;
 
-    bool on_measurement(
+    BenDrive_Intf::Motor_Intf::Error on_measurement(
         std::optional<float> vbus_voltage,
         std::optional<float2D> Ialpha_beta,
         uint32_t input_timestamp) final;
 
-    bool get_alpha_beta_output(
+    BenDrive_Intf::Motor_Intf::Error get_alpha_beta_output(
         uint32_t output_timestamp,
         std::optional<float2D> *mod_alpha_beta,
         std::optional<float> *ibus) final;

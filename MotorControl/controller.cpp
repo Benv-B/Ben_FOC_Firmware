@@ -1,4 +1,7 @@
 #include "controller.hpp"
+#include "axis.hpp"
+#include "ben_drive_main.h"
+#include "utils.hpp"
 #include <algorithm>
 #include <numeric>
 
@@ -12,15 +15,15 @@
 bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
 {
     float pos_err = input_pos_ - pos_estimate;
-    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold / (float)ams_encoder.config_.cpr &&
-        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold / (float)ams_encoder.config_.cpr)
+    if (std::abs(pos_err) <= config_.anticogging.calib_pos_threshold / (float)axis_->encoder_.config_.cpr &&
+        std::abs(vel_estimate) < config_.anticogging.calib_vel_threshold / (float)axis_->encoder_.config_.cpr)
     {
         config_.anticogging.cogging_map[std::clamp<uint32_t>(config_.anticogging.index++, 0, 3600)] = vel_integrator_torque_;
     }
     if (config_.anticogging.index < 3600)
     {
         config_.control_mode = CONTROL_MODE_POSITION_CONTROL;
-        input_pos_ = config_.anticogging.index * ams_encoder.getCoggingRatio();
+        input_pos_ = config_.anticogging.index * axis_->encoder_.getCoggingRatio();
         input_vel_ = 0.0f;
         input_torque_ = 0.0f;
         input_pos_updated();
@@ -40,6 +43,21 @@ bool Controller::anticogging_calibration(float pos_estimate, float vel_estimate)
     }
 }
 
+void Controller::reset() {
+    // pos_setpoint is initialized in start_closed_loop_control
+    vel_setpoint_ = 0.0f;
+    vel_integrator_torque_ = 0.0f;
+    torque_setpoint_ = 0.0f;
+    mechanical_power_ = 0.0f;
+    electrical_power_ = 0.0f;
+}
+
+void Controller::set_input_pos_and_steps(float const pos)
+{
+    input_pos_ = pos;
+    axis_->steps_ = (int64_t)(pos * config_.steps_per_circular_range);
+}
+
 bool Controller::control_mode_updated()
 {
     if (config_.control_mode >= CONTROL_MODE_POSITION_CONTROL)
@@ -56,11 +74,6 @@ bool Controller::control_mode_updated()
     return true;
 }
 
-void Controller::set_input_pos_and_steps(float const pos)
-{
-    input_pos_ = pos;
-    axis_->steps_ = (int64_t)(pos * config_.steps_per_circular_range);
-}
 
 bool Controller::update()
 {
@@ -69,8 +82,8 @@ bool Controller::update()
     // std::optional<float> pos_wrap = pos_wrap_src_.present();
     std::optional<float> vel_estimate = vel_estimate_src_.present();
 
-    std::optional<float> anticogging_pos_estimate = ams_encoder.pos_estimate_.present();
-    std::optional<float> anticogging_vel_estimate = ams_encoder.vel_estimate_.present();
+    std::optional<float> anticogging_pos_estimate = axis_->encoder_.pos_estimate_.present();
+    std::optional<float> anticogging_vel_estimate = axis_->encoder_.vel_estimate_.present();
 
     if (config_.anticogging.calib_anticogging)
     {
@@ -140,7 +153,7 @@ bool Controller::update()
     {
         vel_setpoint_ = std::clamp(vel_setpoint_, -config_.vel_limit, config_.vel_limit);
     }
-    const float Tlim = motor.max_available_torque();
+    const float Tlim = axis_->motor_.max_available_torque();
     torque_setpoint_ = std::clamp(torque_setpoint_, -Tlim, Tlim);
 
     // Position control
@@ -192,7 +205,7 @@ bool Controller::update()
             // set_error(ERROR_INVALID_ESTIMATE);
             return false;
         }
-        float anticogging_pos = *anticogging_pos_estimate / ams_encoder.getCoggingRatio();
+        float anticogging_pos = *anticogging_pos_estimate / axis_->encoder_.getCoggingRatio();
         torque += config_.anticogging.cogging_map[std::clamp(mod((int)anticogging_pos, 3600), 0, 3600)];
     }
 
@@ -247,7 +260,7 @@ bool Controller::update()
     }
 
     float ideal_electrical_power = 0.0f;
-    ideal_electrical_power = motor.current_control_.power_;
+    ideal_electrical_power = axis_->motor_.current_control_.power_;
     mechanical_power_ += config_.mechanical_power_bandwidth * current_meas_period * (torque * *vel_estimate * M_PI * 2.0f - mechanical_power_);
     electrical_power_ += config_.electrical_power_bandwidth * current_meas_period * (ideal_electrical_power - electrical_power_);
 

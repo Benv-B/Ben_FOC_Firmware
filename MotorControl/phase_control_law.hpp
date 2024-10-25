@@ -31,7 +31,7 @@ public:
      * @param input_timestamp: The timestamp (in HCLK ticks) corresponding to
      *        the vbus_voltage and current measurement.
      */
-    virtual bool on_measurement(
+    virtual BenDrive_Intf::Motor_Intf::Error on_measurement(
         std::optional<float> vbus_voltage,
         std::optional<std::array<float, N_PHASES>> currents,
         uint32_t input_timestamp) = 0;
@@ -65,7 +65,7 @@ public:
      *           triggering a motor disarm. In this phase the PWMs will not yet
      *           be truly active.
      */
-    virtual bool get_output(
+    virtual BenDrive_Intf::Motor_Intf::Error get_output(
         uint32_t output_timestamp,
         float (&pwm_timings)[N_PHASES],
         std::optional<float> *ibus) = 0;
@@ -74,23 +74,23 @@ public:
 class AlphaBetaFrameController : public PhaseControlLaw<3>
 {
 private:
-    Motor::Error on_measurement(
+    BenDrive_Intf::Motor_Intf::Error on_measurement(
         std::optional<float> vbus_voltage,
         std::optional<std::array<float, 3>> currents,
         uint32_t input_timestamp) final;
 
-    Motor::Error get_output(
+    BenDrive_Intf::Motor_Intf::Error get_output(
         uint32_t output_timestamp,
         float (&pwm_timings)[3],
         std::optional<float> *ibus) final;
 
 protected:
-    virtual Motor::Error on_measurement(
+    virtual BenDrive_Intf::Motor_Intf::Error on_measurement(
         std::optional<float> vbus_voltage,
         std::optional<float2D> Ialpha_beta,
         uint32_t input_timestamp) = 0;
 
-    virtual Motor::Error get_alpha_beta_output(
+    virtual BenDrive_Intf::Motor_Intf::Error get_alpha_beta_output(
         uint32_t output_timestamp,
         std::optional<float2D> *mod_alpha_beta,
         std::optional<float> *ibus) = 0;

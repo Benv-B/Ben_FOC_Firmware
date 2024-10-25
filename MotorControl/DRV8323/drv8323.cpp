@@ -181,7 +181,7 @@ DRV8323::FaultType_e DRV8323::get_error()
     uint16_t fault1, fault2;
 
     if (!read_reg(Fault_Status, &fault1) ||
-        !read_reg(kRegNameStatus2, &fault2))
+        !read_reg(VGS_Status, &fault2))
     {
         return (FaultType_e)0xffffffff;
     }

@@ -13,12 +13,10 @@
 class BenDrive
 {
 public:
-    BenDrive(Encoder &encoder) : AMSEncoder(encoder) {}
-
     void sampling_cb();
     void control_loop_cb(uint32_t timestamp);
 
-    Encoder &AMSEncoder;
+//    Encoder &encoder_;
 
     uint32_t last_update_timestamp_ = 0;
     uint32_t n_evt_control_loop_ = 0;
@@ -26,6 +24,6 @@ public:
 
 extern BenDrive bdrv; // defined in main.cpp
 
-#endif // __cplusplus
+//#endif // __cplusplus
 
 #endif /* __ODRIVE_MAIN_H */
