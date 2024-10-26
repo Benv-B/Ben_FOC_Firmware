@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
 #Uncomment for hardware floating point
-add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING)
+add_compile_definitions(ARM_MATH_CM4;ARM_MATH_MATRIX_CHECK;ARM_MATH_ROUNDING;FPU_FPV4)
 add_compile_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 add_link_options(-mfloat-abi=hard -mfpu=fpv4-sp-d16)
 
@@ -55,7 +55,8 @@ include_directories(Inc
                     Middlewares/Third_Party/FreeRTOS/Source/include
                     Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS
                     Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
-                    Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include
+                    Drivers/CMSIS/Device/ST/STM32F4xx/Include
+                    Drivers/CMSIS/Include
                     Src
                     Middlewares/ST/STM32_USB_Device_Library/Core/Inc
                     Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
@@ -78,6 +79,9 @@ set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTX_FLASH.ld)
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})
+
+link_directories("Drivers/CMSIS/Lib")
+link_libraries("libarm_cortexM4lf_math.a")
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
